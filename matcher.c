@@ -52,8 +52,10 @@ int match_bracket(char *line, char *pattern) {
 
 int rgrep_matches(char *line, char *pattern) {
 	char *end;
+	int flag;
 	for (;*line != '\0'; line++) {
 		end = line;
+	  flag = 1;
 	  for (;*pattern != '\0'; pattern++) {
 	  	switch (*pattern) {
 	  		case '.':
@@ -63,20 +65,23 @@ int rgrep_matches(char *line, char *pattern) {
 	  			if (match_bracket(end, pattern))
 	  				break;
 	  			else
-	  				continue;
+	  				flag = 0;
 	  			break;
 	  		case '\\':
 	  			pattern++;
 	  			if (*end == *pattern)
 	  				end++;
 	  			else
-	  				continue;
+	  				flag = 0;
 	  			break;
 	  		default:
 	  		 end++;
 	  		 break;
-	  	}
+	  	} // end of switch
+	  	if (!flag) break;
 	  }
-	}
-  return 1;
+	  if (!flag) continue;
+	  return 1;
+	} // end of line for
+  return 0;
 }
