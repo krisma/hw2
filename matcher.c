@@ -25,8 +25,8 @@ int bracket_match(char last, char *tmp_line, char *tmp_pattern) {
 				no_problem = 0;
 				break;
 			}
-			if (no_problem)
-				no_problem = rgrep_matches(tmp_line, tmp_pattern);
+		if (no_problem)
+			no_problem = rgrep_matches(tmp_line, tmp_pattern);
 		if (no_problem) return 1;
 	}
 	return 0;
@@ -42,6 +42,7 @@ int bracket_match(char last, char *tmp_line, char *tmp_pattern) {
 int rgrep_matches(char *line, char *pattern) {
 		char *tmp_line, *tmp_pattern, last;
 		int no_problem;
+		printf("Ready to match:%swith pattern: %s\n", line, pattern);
 		for (; *(line+1) != '\0'; line++) {
 			// iterate to try different entries
 			tmp_line = line;
@@ -56,6 +57,8 @@ int rgrep_matches(char *line, char *pattern) {
 				}
 				switch (*tmp_pattern) {
 					case '.':
+						if (*(tmp_pattern + 1) == '{')
+							break;
 						last = *tmp_pattern;
 						tmp_line++;
 						break;
@@ -66,6 +69,8 @@ int rgrep_matches(char *line, char *pattern) {
 						tmp_pattern++;
 						// do not break
 					default:
+						if (*(tmp_pattern + 1) == '{')
+							break;
 						//printf("%c %c\n", *tmp_line, *tmp_pattern);
 						if (*tmp_line != *tmp_pattern)
 							no_problem = 0;
