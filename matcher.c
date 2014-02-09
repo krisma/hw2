@@ -1,7 +1,36 @@
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "matcher.h"
+
+
+int bracket_match(char last, char *tmp_line, char *tmp_pattern) {
+	int m, n, i, j, no_problem;
+	char *tmp;
+	tmp = strchr(tmp_pattern, ',');
+	*tmp = '\0';
+	m = atoi(tmp_pattern + 1);
+	*tmp = ',';
+	tmp_pattern = tmp;
+	tmp = strchr(tmp_pattern, '}');
+	*tmp = '\0';
+	n = atoi(tmp_pattern + 1);
+	*tmp = '}';
+	tmp_pattern = tmp + 1;
+	for (i = m; i <= m + n; i++) {
+		// try if c appears i times in line
+		no_problem = 1;
+		for (j = 0; j < i; j++)
+			if (*(tmp_line + j) != last) {
+				no_problem = 0;
+				break;
+			}
+			if (no_problem)
+				no_problem = rgrep_matches(tmp_line, tmp_pattern);
+		if (no_problem) return 1;
+	}
+	return 0;
+}
 
 /**
  * Implementation of your matcher function, which
@@ -10,78 +39,48 @@
  * You may assume that both line and pattern point
  * to reasonably short, null-terminated strings.
  */
-
-int equal(char c, char *pattern) {
-	if (*(pattern-1) == '\\') {
-		if (*pattern == c)
-			return 1;
-		else
-			return 0;
-	}
-	switch(*pattern) {
-		case '.':
-			return 1;
-		default:
-			if (c == *pattern)
-				return 1;
-			else
-				return 0;
-	}
-}
-
-int match_bracket(char *line, char *pattern) {
-	int m, n, count = 0;
-	char *tmp = pattern;
-	char *idx = strchr(pattern, ',');
-	*idx = '\0';
-	m = atoi(pattern+1);
-	pattern = idx+1;
-	idx = strchr(pattern, '}');
-	*idx = '\0';
-	n = atoi(pattern);
-	while(equal(*line, tmp-1))
-		count++;
-	// only m available
-	if (count >= m && n == 0)
-		return 1;
-	// both m and n available
-	if (count >= m && count <= n)
-		return 1;
-	return 0;
-}
-
 int rgrep_matches(char *line, char *pattern) {
-	char *end;
-	int flag;
-	for (;*line != '\0'; line++) {
-		end = line;
-	  flag = 1;
-	  for (;*pattern != '\0'; pattern++) {
-	  	switch (*pattern) {
-	  		case '.':
-	  			end++;
-	  			break;
-	  		case '{':
-	  			if (match_bracket(end, pattern))
-	  				break;
-	  			else
-	  				flag = 0;
-	  			break;
-	  		case '\\':
-	  			pattern++;
-	  			if (*end == *pattern)
-	  				end++;
-	  			else
-	  				flag = 0;
-	  			break;
-	  		default:
-	  		 end++;
-	  		 break;
-	  	} // end of switch
-	  	if (!flag) break;
-	  }
-	  if (!flag) continue;
-	  return 1;
-	} // end of line for
-  return 0;
+		char *tmp_line, *tmp_pattern, last;
+		int no_problem;
+		for (; *(line+1) != '\0'; line++) {
+			// iterate to try different entries
+			tmp_line = line;
+			// if no problem found when pattern ends, return true
+			no_problem = 1;
+			tmp_pattern = pattern;
+			while(*tmp_pattern != '\0') {
+				//printf("next pattern: %c(%d)\n", *tmp_pattern, *tmp_pattern);
+				if (*tmp_line == '\0') {
+					no_problem = 0;
+					break;
+				}
+				switch (*tmp_pattern) {
+					case '.':
+						last = *tmp_pattern;
+						tmp_line++;
+						break;
+					case '{':
+						no_problem = bracket_match(last, tmp_line, tmp_pattern);
+						break;
+					case '\\':
+						tmp_pattern++;
+						// do not break
+					default:
+						//printf("%c %c\n", *tmp_line, *tmp_pattern);
+						if (*tmp_line != *tmp_pattern)
+							no_problem = 0;
+						last = *tmp_pattern;
+						tmp_line++;
+				}
+				// if problem found, quit the loop
+				if (!no_problem) break;
+				tmp_pattern++;
+			}
+			// if no problem found, return true
+			if (no_problem) {
+				printf("Success!\n");
+				return 1;
+			}
+		}
+    return 0;
 }
