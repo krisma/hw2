@@ -3,6 +3,40 @@
 #include <string.h>
 #include "matcher.h"
 
+int try_entry(char *tmp_line, char *tmp_pattern);
+int bracket_match(char *tmp_line, char *tmp_pattern);
+
+int try_entry(char *tmp_line, char *tmp_pattern) {
+	int no_problem = 1;
+	// if no problem found when pattern ends, return true
+	while(*tmp_pattern != '\0') {
+		//printf("next pattern: %c(%d)\n", *tmp_pattern, *tmp_pattern);
+		if (*tmp_line == '\0') return 0;
+		switch (*tmp_pattern) {
+			case '.':
+				if (*(tmp_pattern + 1) == '{')
+					break;
+				tmp_line++;
+				break;
+			case '{':
+				if (bracket_match(tmp_line, tmp_pattern)) return 1;
+				break;
+			case '\\':
+				tmp_pattern++;
+				// do not break
+			default:
+				if (*(tmp_pattern + 1) == '{')
+					break;
+				if (*tmp_line != *tmp_pattern)
+					no_problem = 0;
+				tmp_line++;
+		}
+		// if problem found, quit the loop
+		if (!no_problem) return 0;
+		tmp_pattern++;
+	}
+	return 1;
+}
 
 int bracket_match(char *tmp_line, char *tmp_pattern) {
 	int m, n, i, j, no_problem, period_flag;
@@ -31,7 +65,7 @@ int bracket_match(char *tmp_line, char *tmp_pattern) {
 			period_flag = 1;
 		pre = *(tmp_pattern - 1);
 	}
-	// printf("Ready to do bracket match: char: %c; m: %d; n : %d\nline is %s", pre, m, n, tmp_line);
+	//printf("Ready to do bracket match: char: %c; m: %d; n : %d\nline is %s", pre, m, n, tmp_line);
 	for (i = m; i <= m + n; i++) {
 		// try if c appears i times in line
 		no_problem = 1;
@@ -45,7 +79,7 @@ int bracket_match(char *tmp_line, char *tmp_pattern) {
 			}
 		if (no_problem) {
 			next = strchr(tmp_pattern, '}') + 1;
-			no_problem = rgrep_matches(tmp_line + i, next);
+			no_problem = try_entry(tmp_line + i, next);
 		}
 		if (no_problem) return 1;
 	}
@@ -61,47 +95,14 @@ int bracket_match(char *tmp_line, char *tmp_pattern) {
  */
 int rgrep_matches(char *line, char *pattern) {
 	char *tmp_line, *tmp_pattern;
-	int no_problem;
 	if (*pattern == '\0') return 1;
 	//printf("Ready to match:%swith pattern: %s\n", line, pattern);
 	while (*line != '\0') {
 		// iterate to try different entries
 		tmp_line = line;
-		// if no problem found when pattern ends, return true
-		no_problem = 1;
 		tmp_pattern = pattern;
-		while(*tmp_pattern != '\0') {
-			//printf("next pattern: %c(%d)\n", *tmp_pattern, *tmp_pattern);
-			if (*tmp_line == '\0') {
-				no_problem = 0;
-				break;
-			}
-			switch (*tmp_pattern) {
-				case '.':
-					if (*(tmp_pattern + 1) == '{')
-						break;
-					tmp_line++;
-					break;
-				case '{':
-					if (bracket_match(tmp_line, tmp_pattern))
-						return 1;
-					break;
-				case '\\':
-					tmp_pattern++;
-					// do not break
-				default:
-					if (*(tmp_pattern + 1) == '{')
-						break;
-					if (*tmp_line != *tmp_pattern)
-						no_problem = 0;
-					tmp_line++;
-			}
-			// if problem found, quit the loop
-			if (!no_problem) break;
-			tmp_pattern++;
-		}
 		// if no problem found, return true
-		if (no_problem) return 1;
+		if (try_entry(tmp_line, tmp_pattern)) return 1;
 		line++;
 	}
   return 0;
